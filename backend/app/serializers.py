@@ -31,6 +31,7 @@ def user_out(user: User) -> dict:
 def appeal_out(appeal: Appeal) -> dict:
     return {
         "id": appeal.id,
+        "kind": appeal.kind,
         "status": appeal.status,
         "message": appeal.message,
         "admin_response": appeal.admin_response,

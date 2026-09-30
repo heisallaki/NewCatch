@@ -43,7 +43,7 @@ export function ProfileCard({ card, onOpen }: { card: Card; onOpen?: () => void 
         </Heading>
         <Body style={{ marginTop: 2 }}>{card.course}</Body>
         <Muted>
-          {card.year_of_study} · {card.campus}
+          {card.gender ? `${card.gender} · ` : ''}{card.year_of_study} · {card.campus}
         </Muted>
         <MatchBadge match={card.match} />
         <View style={styles.chips}>

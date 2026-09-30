@@ -10,6 +10,7 @@ OTP_SUBJECTS = {
     "register": "Verify your New Catch email",
     "login": "Your New Catch sign-in code",
     "reset": "Reset your New Catch password",
+    "appeal": "Verify your New Catch appeal",
 }
 
 

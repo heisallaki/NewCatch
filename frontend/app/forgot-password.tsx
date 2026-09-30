@@ -79,7 +79,7 @@ export default function ForgotPassword() {
         Reset your password
       </Heading>
       <GlassCard>
-        <ErrorNotice error={error} />
+        <ErrorNotice error={error} email={email} />
         {step === 'email' ? (
           <View>
             <Body style={{ marginBottom: 16 }}>Enter your JKUAT email and we will send a reset code.</Body>

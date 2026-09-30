@@ -13,6 +13,7 @@ import { Seo } from '@/components/Seo';
 import { TextField } from '@/components/TextField';
 import { TextLink } from '@/components/TextLink';
 import { Body, Heading } from '@/components/Typography';
+import { GenderField } from '@/components/GenderField';
 import { CAMPUSES, EMAIL_DOMAIN, isJkuatEmail, isStrongPassword, YEARS } from '@/constants/options';
 import { PolicySlug, POLICY_VERSION } from '@/constants/policies';
 import { colors } from '@/constants/theme';
@@ -34,6 +35,8 @@ export default function Register() {
   const [displayName, setDisplayName] = useState('');
   const [campus, setCampus] = useState('');
   const [year, setYear] = useState('');
+  const [gender, setGender] = useState('');
+  const [genderCustom, setGenderCustom] = useState('');
   const [course, setCourse] = useState('');
   const [gradYear, setGradYear] = useState('');
   const [password, setPassword] = useState('');
@@ -91,6 +94,8 @@ export default function Register() {
     if (displayName.trim().length < 2) return fail('Enter a preferred name.');
     if (!campus) return fail('Select your campus.');
     if (!year) return fail('Select your year of study.');
+    if (!gender) return fail('Select your gender.');
+    if (gender === 'Custom' && genderCustom.trim().length < 2) return fail('Describe your gender in a few words.');
     if (course.trim().length < 2) return fail('Enter your course.');
     if (gradYear && !/^20\d{2}$/.test(gradYear)) return fail('Enter a valid graduation year, for example 2028.');
     if (!isStrongPassword(password)) return fail('Password must be at least 10 characters and include a letter and a number.');
@@ -106,6 +111,8 @@ export default function Register() {
           display_name: displayName.trim(),
           campus,
           year_of_study: year,
+          gender,
+          gender_custom: gender === 'Custom' ? genderCustom.trim() : null,
           course: course.trim(),
           graduation_year: gradYear ? Number(gradYear) : null,
           accepted_policy_version: POLICY_VERSION,
@@ -126,7 +133,7 @@ export default function Register() {
         Create your account
       </Heading>
       <GlassCard>
-        <ErrorNotice error={error} />
+        <ErrorNotice error={error} email={email} />
         {step === 'email' ? (
           <View>
             <Body style={{ marginBottom: 16 }}>Only verified JKUAT students can join. We will email you a code.</Body>
@@ -187,6 +194,7 @@ export default function Register() {
             />
             <Select label="Campus" value={campus} options={CAMPUSES} onChange={setCampus} placeholder="Select campus" />
             <Select label="Year of study" value={year} options={YEARS} onChange={setYear} placeholder="Select year" />
+            <GenderField gender={gender} custom={genderCustom} onGender={setGender} onCustom={setGenderCustom} />
             <TextField label="Course" value={course} onChangeText={setCourse} placeholder="e.g. BSc Computer Science" />
             <TextField
               label="Expected graduation year (optional)"

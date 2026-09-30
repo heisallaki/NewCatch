@@ -13,6 +13,7 @@ from app.errors import ApiError
 from app.matching.scoring import score_profiles
 from app.models import Match, Profile, Swipe, User
 from app.profiles.service import card_out, is_complete
+from app.safety.service import blocked_ids, is_blocked_between
 
 router = APIRouter(prefix="/discovery", tags=["discovery"])
 
@@ -27,7 +28,7 @@ def require_complete_viewer(viewer: User) -> None:
         raise ApiError(
             403,
             "profile_incomplete",
-            "Complete your profile with a photo, interests and what you are looking for to start discovering.",
+            "Complete your profile with a photo, gender, interests and what you are looking for to start discovering.",
         )
 
 
@@ -48,6 +49,7 @@ def cards(
 ):
     require_complete_viewer(viewer)
     viewer_profile = viewer.profile
+    excluded = blocked_ids(db, viewer.id)
     swiped = select(Swipe.to_user_id).where(Swipe.from_user_id == viewer.id)
     stmt = (
         select(User)
@@ -62,6 +64,8 @@ def cards(
         .order_by(User.id)
         .limit(400)
     )
+    if excluded:
+        stmt = stmt.where(User.id.not_in(excluded))
     if viewer_profile.discovery_scope == "my_campus":
         stmt = stmt.where(Profile.campus == viewer_profile.campus)
     scored = []
@@ -89,6 +93,7 @@ def swipe(payload: SwipePayload, viewer: User = Depends(get_active_user), db: Se
         or target.profile is None
         or not is_complete(target)
         or not can_see(viewer.profile, target.profile)
+        or is_blocked_between(db, viewer.id, target.id)
     ):
         raise ApiError(404, "not_found", "This profile is no longer available.")
     db.add(Swipe(from_user_id=viewer.id, to_user_id=target.id, action=payload.action))
@@ -120,6 +125,7 @@ def swipe(payload: SwipePayload, viewer: User = Depends(get_active_user), db: Se
 
 @router.get("/catches")
 def catches(viewer: User = Depends(get_active_user), db: Session = Depends(get_db)):
+    excluded = blocked_ids(db, viewer.id)
     matches = db.scalars(
         select(Match)
         .where(or_(Match.user_a_id == viewer.id, Match.user_b_id == viewer.id))
@@ -132,13 +138,13 @@ def catches(viewer: User = Depends(get_active_user), db: Session = Depends(get_d
         .order_by(Swipe.created_at.desc())
         .limit(100)
     ).all()
-    waiting_ids = [user_id for user_id in caught_ids if user_id not in matched]
+    waiting_ids = [user_id for user_id in caught_ids if user_id not in matched and user_id not in excluded]
     users = load_users(db, list(matched) + waiting_ids)
     viewer_profile = viewer.profile
 
     def build(user_id: int, allow_hidden: bool):
         user = users.get(user_id)
-        if user is None or user.status != "active" or user.profile is None:
+        if user is None or user.status != "active" or user.profile is None or user_id in excluded:
             return None
         if not allow_hidden and user.profile.visibility == "hidden":
             return None

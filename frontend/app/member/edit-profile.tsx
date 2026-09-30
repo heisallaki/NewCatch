@@ -5,6 +5,7 @@ import { View } from 'react-native';
 import { Button } from '@/components/Button';
 import { ChipSelect } from '@/components/ChipSelect';
 import { ErrorNotice } from '@/components/ErrorNotice';
+import { GenderField } from '@/components/GenderField';
 import { GlassCard } from '@/components/GlassCard';
 import { Notice } from '@/components/Notice';
 import { Loader, Screen } from '@/components/Screen';
@@ -32,6 +33,8 @@ type Form = {
   fullName: string;
   displayName: string;
   openedName: string;
+  gender: string;
+  genderCustom: string;
   campus: string;
   year: string;
   course: string;
@@ -47,6 +50,7 @@ type Form = {
 
 const missingLabels: Record<string, string> = {
   photo: 'add at least one photo',
+  gender: 'choose your gender',
   interests: 'pick at least one interest',
   looking_for: 'choose what you are looking for',
 };
@@ -56,6 +60,8 @@ function fromProfile(profile: OwnProfile): Form {
     fullName: profile.full_name,
     displayName: profile.display_name,
     openedName: labelFor(NAME_OPTIONS, profile.opened_name),
+    gender: profile.gender ?? '',
+    genderCustom: profile.gender_custom ?? '',
     campus: profile.campus,
     year: profile.year_of_study,
     course: profile.course,
@@ -112,6 +118,8 @@ export default function EditProfile() {
     if (form.fullName.trim().length < 2) return fail('Enter your name.');
     if (form.displayName.trim().length < 2) return fail('Enter a preferred name.');
     if (!form.campus || !form.year) return fail('Select your campus and year of study.');
+    if (!form.gender) return fail('Select your gender.');
+    if (form.gender === 'Custom' && form.genderCustom.trim().length < 2) return fail('Describe your gender in a few words.');
     if (form.course.trim().length < 2) return fail('Enter your course.');
     if (form.gradYear && !/^20\d{2}$/.test(form.gradYear)) return fail('Enter a valid graduation year, for example 2028.');
     setBusy(true);
@@ -123,6 +131,8 @@ export default function EditProfile() {
           full_name: form.fullName.trim(),
           display_name: form.displayName.trim(),
           opened_name: valueFor(NAME_OPTIONS, form.openedName),
+          gender: form.gender,
+          gender_custom: form.gender === 'Custom' ? form.genderCustom.trim() : null,
           campus: form.campus,
           year_of_study: form.year,
           course: form.course.trim(),
@@ -191,6 +201,7 @@ export default function EditProfile() {
         />
         <Select label="Campus" value={form.campus} options={CAMPUSES} onChange={(v) => set('campus', v)} />
         <Select label="Year of study" value={form.year} options={YEARS} onChange={(v) => set('year', v)} />
+        <GenderField gender={form.gender} custom={form.genderCustom} onGender={(v) => set('gender', v)} onCustom={(v) => set('genderCustom', v)} />
         <TextField label="Course" value={form.course} onChangeText={(v) => set('course', v)} />
         <TextField
           label="Expected graduation year (optional)"

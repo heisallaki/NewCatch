@@ -4,12 +4,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.admin.router import router as admin_router
+from app.appeals.router import router as appeals_router
 from app.auth.router import router as auth_router
+from app.chat.router import router as chat_router
 from app.config import settings
 from app.discovery.router import router as discovery_router
 from app.errors import ApiError
-from app.profiles.router import media_router
+from app.media.router import router as media_router
 from app.profiles.router import router as profiles_router
+from app.reports.router import router as reports_router
+from app.safety.router import router as safety_router
 from app.users.router import router as users_router
 
 
@@ -81,8 +85,12 @@ def health():
 
 
 app.include_router(auth_router)
+app.include_router(appeals_router)
 app.include_router(users_router)
 app.include_router(profiles_router)
 app.include_router(media_router)
 app.include_router(discovery_router)
+app.include_router(safety_router)
+app.include_router(reports_router)
+app.include_router(chat_router)
 app.include_router(admin_router)

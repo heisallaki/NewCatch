@@ -24,6 +24,8 @@ YEARS = [
     "Other",
 ]
 
+GENDERS = ["Male", "Female", "Nonbinary", "Custom"]
+
 MUSIC_GENRES = [
     "R&B",
     "Afrobeats",
@@ -55,6 +57,15 @@ LOOKING_FOR = [
     "I'm just exploring",
 ]
 
+REPORT_REASONS = [
+    "Harassment",
+    "Inappropriate content",
+    "Fake account",
+    "Spam",
+    "Impersonation",
+    "Other",
+]
+
 STATUS_ACTIVE = "active"
 STATUS_DEACTIVATED = "deactivated"
 STATUS_BLACKLISTED = "blacklisted"
@@ -62,5 +73,12 @@ STATUS_BLACKLISTED = "blacklisted"
 APPEAL_PENDING = "pending"
 APPEAL_ACCEPTED = "accepted"
 APPEAL_REJECTED = "rejected"
+APPEAL_KIND_DEACTIVATION = "deactivation"
+APPEAL_KIND_BLACKLIST = "blacklist"
+
+REPORT_OPEN = "open"
+REPORT_DISMISSED = "dismissed"
+REPORT_REVIEWED = "reviewed"
+REPORT_ACTIONED = "actioned"
 
 CSRF_HEADER_VALUE = "NewCatch"

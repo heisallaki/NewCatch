@@ -1,9 +1,10 @@
 import re
+from typing import Optional
 
 from app.config import settings
 from app.errors import ApiError
 from app.matching.scoring import MatchResult
-from app.models import Photo, User
+from app.models import Photo, Profile, User
 from app.security import create_jwt
 
 INTEREST_PATTERN = re.compile(r"^\w[\w &'\-\.\+#/]{1,29}$")
@@ -19,6 +20,14 @@ def clean_interests(values: list[str]) -> list[str]:
     return list(unique.values())
 
 
+def gender_label(profile: Profile) -> Optional[str]:
+    if not profile.gender:
+        return None
+    if profile.gender == "Custom" and profile.gender_custom:
+        return profile.gender_custom
+    return profile.gender
+
+
 def approved_photos(user: User) -> list[Photo]:
     return [photo for photo in user.photos if photo.status == "approved"]
 
@@ -32,6 +41,8 @@ def missing_fields(user: User) -> list[str]:
     missing = []
     if not approved_photos(user):
         missing.append("photo")
+    if user.profile is None or not user.profile.gender:
+        missing.append("gender")
     if user.profile is None or not user.profile.interests:
         missing.append("interests")
     if user.profile is None or not user.profile.looking_for:
@@ -55,6 +66,8 @@ def own_profile_out(user: User) -> dict:
         "year_of_study": profile.year_of_study,
         "course": profile.course,
         "graduation_year": profile.graduation_year,
+        "gender": profile.gender,
+        "gender_custom": profile.gender_custom,
         "bio": profile.bio,
         "interests": profile.interests,
         "music_genres": profile.music_genres,
@@ -68,12 +81,22 @@ def own_profile_out(user: User) -> dict:
     }
 
 
+def mini_out(user: User) -> dict:
+    photos = approved_photos(user)
+    return {
+        "user_id": user.id,
+        "display_name": user.profile.display_name,
+        "photo": photo_out(photos[0]) if photos else None,
+    }
+
+
 def card_out(target: User, result: MatchResult) -> dict:
     profile = target.profile
     photos = approved_photos(target)
     return {
         "user_id": target.id,
         "display_name": profile.display_name,
+        "gender": gender_label(profile),
         "course": profile.course,
         "year_of_study": profile.year_of_study,
         "campus": profile.campus,
@@ -89,7 +112,9 @@ def card_out(target: User, result: MatchResult) -> dict:
     }
 
 
-def opened_profile_out(target: User, result: MatchResult, relationship: str) -> dict:
+def opened_profile_out(
+    target: User, result: MatchResult, relationship: str, match_id: Optional[int] = None
+) -> dict:
     profile = target.profile
     data = card_out(target, result)
     data.update(
@@ -100,6 +125,7 @@ def opened_profile_out(target: User, result: MatchResult, relationship: str) -> 
             "graduation_year": profile.graduation_year,
             "photos": [photo_out(photo) for photo in approved_photos(target)],
             "relationship": relationship,
+            "match_id": match_id,
         }
     )
     return data

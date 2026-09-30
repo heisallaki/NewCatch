@@ -98,3 +98,9 @@ export function isJkuatEmail(value: string): boolean {
 export function isStrongPassword(value: string): boolean {
   return value.length >= 10 && /[A-Za-z]/.test(value) && /\d/.test(value);
 }
+export const GENDERS = ['Male', 'Female', 'Nonbinary', 'Custom'];
+
+export function genderLabel(gender: string | null, custom: string | null): string {
+  if (!gender) return '';
+  return gender === 'Custom' && custom ? custom : gender;
+}

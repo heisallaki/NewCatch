@@ -33,7 +33,7 @@ export const POLICIES: Policy[] = [
         heading: 'Information we collect',
         body: [
           'Account information: your JKUAT student email and your password. Passwords are stored only as a secure hash, never in plain text.',
-          'Profile information you choose to add: your name, preferred name, photos, campus, year of study, course, hobbies, interests, music preferences, bio and what you are looking for.',
+          'Profile information you choose to add: your name, preferred name, gender, photos, campus, year of study, course, hobbies, interests, music preferences, bio and what you are looking for.',
           'Activity and content: Catches, Swerves, matches, messages, reports and appeals you submit.',
           'Security and legal records: login times, the version of the policies you accepted and when you accepted them.',
         ],
@@ -232,7 +232,7 @@ export const POLICIES: Policy[] = [
       {
         heading: 'Permanent blacklisting',
         body: [
-          `A blacklisted email cannot register again. If you believe this is a mistake, appeal by emailing ${SUPPORT_EMAIL} from your JKUAT email.`,
+          `A blacklisted email cannot register again. If you believe this is a mistake, use the Appeal page to verify your JKUAT email with a code and explain why the decision should be reviewed. You will see the result there and by email. You can also contact ${SUPPORT_EMAIL}.`,
         ],
       },
     ],

@@ -84,7 +84,7 @@ export default function Login() {
         Log in
       </Heading>
       <GlassCard>
-        <ErrorNotice error={error} />
+        <ErrorNotice error={error} email={email} />
         {step === 'credentials' ? (
           <View>
             <TextField

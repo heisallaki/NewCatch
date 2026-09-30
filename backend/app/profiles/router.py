@@ -1,7 +1,4 @@
-from pathlib import Path
-
-from fastapi import APIRouter, Depends, Query
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
@@ -12,12 +9,11 @@ from app.deps import get_active_user, rate_limit
 from app.discovery.service import can_see
 from app.errors import ApiError
 from app.matching.scoring import score_profiles
-from app.models import Match, Photo, Swipe, User
+from app.models import Photo, Swipe, User
 from app.profiles.photos import (
     ALLOWED_MIME,
     decode_upload,
     delete_file,
-    file_path,
     invalid_image,
     process_image,
     save_file,
@@ -30,10 +26,9 @@ from app.profiles.service import (
     opened_profile_out,
     own_profile_out,
 )
-from app.security import decode_jwt
+from app.safety.service import find_match, is_blocked_between
 
 router = APIRouter(prefix="/profiles", tags=["profiles"])
-media_router = APIRouter(tags=["media"])
 
 
 @router.get("/me")
@@ -58,6 +53,8 @@ def update_my_profile(
     profile.display_name = payload.display_name
     profile.campus = payload.campus
     profile.year_of_study = payload.year_of_study
+    profile.gender = payload.gender
+    profile.gender_custom = payload.gender_custom
     profile.course = payload.course
     profile.graduation_year = payload.graduation_year
     profile.bio = payload.bio.strip() if payload.bio and payload.bio.strip() else None
@@ -134,12 +131,13 @@ def open_profile(user_id: int, viewer: User = Depends(get_active_user), db: Sess
         raise ApiError(404, "not_found", "This profile is no longer available.")
     if target.id == viewer.id:
         return opened_profile_out(target, score_profiles(viewer.profile, target.profile), "self")
-    first, second = sorted((viewer.id, target.id))
-    matched = db.scalar(select(Match.id).where(Match.user_a_id == first, Match.user_b_id == second)) is not None
+    if is_blocked_between(db, viewer.id, target.id):
+        raise ApiError(404, "not_found", "This profile is no longer available.")
+    match = find_match(db, viewer.id, target.id)
     swipe_action = db.scalar(
         select(Swipe.action).where(Swipe.from_user_id == viewer.id, Swipe.to_user_id == target.id)
     )
-    if matched:
+    if match is not None:
         relationship = "matched"
     elif swipe_action == "catch":
         relationship = "caught"
@@ -147,23 +145,11 @@ def open_profile(user_id: int, viewer: User = Depends(get_active_user), db: Sess
         relationship = "swerved"
     else:
         relationship = "none"
-    if not matched and not (is_complete(target) and can_see(viewer.profile, target.profile)):
+    if match is None and not (is_complete(target) and can_see(viewer.profile, target.profile)):
         raise ApiError(404, "not_found", "This profile is no longer available.")
-    return opened_profile_out(target, score_profiles(viewer.profile, target.profile), relationship)
-
-
-@media_router.get("/media/{photo_id}")
-def serve_photo(photo_id: int, t: str = Query(..., max_length=2000), db: Session = Depends(get_db)):
-    claims = decode_jwt(t, "media")
-    if claims is None or claims["sub"] != str(photo_id):
-        raise ApiError(404, "not_found", "Not Found")
-    photo = db.get(Photo, photo_id)
-    if photo is None or photo.status != "approved":
-        raise ApiError(404, "not_found", "Not Found")
-    owner = db.get(User, photo.user_id)
-    if owner is None or owner.status != "active":
-        raise ApiError(404, "not_found", "Not Found")
-    path: Path = file_path(photo.filename)
-    if not path.exists():
-        raise ApiError(404, "not_found", "Not Found")
-    return FileResponse(path, media_type="image/jpeg", headers={"Cache-Control": "private, max-age=3600"})
+    return opened_profile_out(
+        target,
+        score_profiles(viewer.profile, target.profile),
+        relationship,
+        match.id if match else None,
+    )

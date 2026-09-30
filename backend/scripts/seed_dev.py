@@ -19,7 +19,7 @@ DOMAIN = "@students.jkuat.ac.ke"
 COLORS = [(255, 77, 141), (255, 138, 92), (125, 211, 252), (74, 222, 128), (251, 191, 36), (167, 139, 250)]
 
 
-def person(email, full_name, display_name, campus, year, course, interests, genres, looking, artist):
+def person(email, full_name, display_name, campus, year, course, interests, genres, looking, artist, gender, custom=None):
     return {
         "email": f"{email}{DOMAIN}",
         "full_name": full_name,
@@ -31,36 +31,38 @@ def person(email, full_name, display_name, campus, year, course, interests, genr
         "genres": genres,
         "looking": looking,
         "artist": artist,
+        "gender": gender,
+        "custom": custom,
     }
 
 
 PEOPLE = [
     person("dev.admin", "Dev Admin", "Admin", "Main Campus", "3rd Year", "BBIT",
-           ["Technology", "Gaming", "Reading"], ["Hip-Hop", "Alternative"], ["Networking", "New people"], "Kendrick Lamar"),
+           ["Technology", "Gaming", "Reading"], ["Hip-Hop", "Alternative"], ["Networking", "New people"], "Kendrick Lamar", "Male"),
     person("dev.user1", "Dev User One", "Amani", "Nairobi CBD Campus", "2nd Year", "Computer Science",
            ["Photography", "Technology", "Football", "Movies", "Travel"], ["Afrobeats", "R&B", "Hip-Hop"],
-           ["Friendship", "Study buddy", "New people"], "Burna Boy"),
+           ["Friendship", "Study buddy", "New people"], "Burna Boy", "Male"),
     person("dev.user2", "Dev User Two", "Zuri", "Karen Campus", "4th Year", "Civil Engineering",
            ["Photography", "Travel", "Cooking", "Fitness"], ["Afrobeats", "Amapiano", "R&B"],
-           ["Friendship", "Dating"], "Burna Boy"),
+           ["Friendship", "Dating"], "Burna Boy", "Female"),
     person("sample.01", "Baraka Otieno", "Baraka", "Nairobi CBD Campus", "2nd Year", "Computer Science",
-           ["Technology", "Gaming", "Football", "Movies"], ["Hip-Hop", "Afrobeats"], ["Study buddy", "Friendship"], "Wizkid"),
+           ["Technology", "Gaming", "Football", "Movies"], ["Hip-Hop", "Afrobeats"], ["Study buddy", "Friendship"], "Wizkid", "Male"),
     person("sample.02", "Neema Wanjiru", "Neema", "Main Campus", "1st Year", "Nursing",
-           ["Reading", "Cooking", "Fashion", "Music"], ["Gospel", "Soul", "R&B"], ["Friendship", "New people"], "Lauryn Hill"),
+           ["Reading", "Cooking", "Fashion", "Music"], ["Gospel", "Soul", "R&B"], ["Friendship", "New people"], "Lauryn Hill", "Female"),
     person("sample.03", "Imani Achieng", "Imani", "Nairobi CBD Campus", "3rd Year", "Business Information Technology",
-           ["Technology", "Photography", "Travel", "Art"], ["Amapiano", "Afrobeats"], ["Networking", "Friendship"], "Tyla"),
+           ["Technology", "Photography", "Travel", "Art"], ["Amapiano", "Afrobeats"], ["Networking", "Friendship"], "Tyla", "Female"),
     person("sample.04", "Jabali Kamau", "Jabali", "Karen Campus", "4th Year", "Mechanical Engineering",
-           ["Cars", "Motorcycles", "Football", "Fitness"], ["Rock", "Hip-Hop"], ["Activity partner", "New people"], "Travis Scott"),
+           ["Cars", "Motorcycles", "Football", "Fitness"], ["Rock", "Hip-Hop"], ["Activity partner", "New people"], "Travis Scott", "Male"),
     person("sample.05", "Tumaini Mwangi", "Tumaini", "Westlands Campus", "2nd Year", "Economics",
-           ["Reading", "Basketball", "Movies", "Travel"], ["Jazz", "Soul"], ["Networking", "I'm just exploring"], "Sade"),
+           ["Reading", "Basketball", "Movies", "Travel"], ["Jazz", "Soul"], ["Networking", "I'm just exploring"], "Sade", "Nonbinary"),
     person("sample.06", "Nia Chebet", "Nia", "Eldoret CBD Campus", "3rd Year", "Agribusiness",
-           ["Cooking", "Fitness", "Travel", "Fashion"], ["Gengetone", "Afrobeats", "Dancehall"], ["Friendship", "Dating"], "Rema"),
+           ["Cooking", "Fitness", "Travel", "Fashion"], ["Gengetone", "Afrobeats", "Dancehall"], ["Friendship", "Dating"], "Rema", "Female"),
     person("sample.07", "Sila Njoroge", "Sila", "Mombasa CBD Campus", "1st Year", "Hospitality Management",
-           ["Photography", "Travel", "Music", "Movies"], ["Reggae", "Dancehall", "Afrobeats"], ["New people", "Friendship"], "Koffee"),
+           ["Photography", "Travel", "Music", "Movies"], ["Reggae", "Dancehall", "Afrobeats"], ["New people", "Friendship"], "Koffee", "Custom", "Genderfluid"),
     person("sample.08", "Amara Odhiambo", "Amara", "Main Campus", "3rd Year", "Computer Science",
-           ["Technology", "Art", "Gaming", "Reading"], ["Alternative", "Electronic"], ["Study buddy", "Networking"], "Tame Impala"),
+           ["Technology", "Art", "Gaming", "Reading"], ["Alternative", "Electronic"], ["Study buddy", "Networking"], "Tame Impala", "Female"),
     person("sample.09", "Kito Mutua", "Kito", "Nakuru CBD Campus", "5th Year", "Architecture",
-           ["Art", "Photography", "Cars", "Travel"], ["Jazz", "Electronic"], ["Activity partner", "Friendship"], "Kaytranada"),
+           ["Art", "Photography", "Cars", "Travel"], ["Jazz", "Electronic"], ["Activity partner", "Friendship"], "Kaytranada", "Male"),
 ]
 
 
@@ -99,6 +101,9 @@ def ensure_person(db, data, index):
         profile.music_genres = data["genres"]
         profile.looking_for = data["looking"]
         profile.favourite_artist = data["artist"]
+    if not profile.gender:
+        profile.gender = data["gender"]
+        profile.gender_custom = data["custom"]
     if not user.photos:
         filename = save_file(placeholder_photo(data["display_name"][0].upper(), index))
         user.photos.append(Photo(filename=filename, position=0, width=800, height=1000))

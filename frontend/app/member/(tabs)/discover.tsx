@@ -80,7 +80,7 @@ export default function Discover() {
 
       {!loading && incomplete ? (
         <GlassCard>
-          <Notice tone="info" message="Add a photo, pick your interests and choose what you are looking for to start discovering people." />
+          <Notice tone="info" message="Add a photo, choose your gender, pick your interests and say what you are looking for to start discovering people." />
           <Button title="Complete your profile" onPress={() => router.push('/member/edit-profile')} />
         </GlassCard>
       ) : null}

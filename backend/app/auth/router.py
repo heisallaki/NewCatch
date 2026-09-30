@@ -103,6 +103,8 @@ def register_complete(
         year_of_study=payload.year_of_study,
         course=payload.course,
         graduation_year=payload.graduation_year,
+        gender=payload.gender,
+        gender_custom=payload.gender_custom,
     )
     db.add(user)
     try:

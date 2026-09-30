@@ -17,7 +17,7 @@ const steps = [
 ];
 
 const features = [
-  { title: 'Verified JKUAT students only', text: 'Every member signs up with a @student.jkuat.ac.ke email and confirms it with a one-time code.' },
+  { title: 'Verified JKUAT students only', text: 'Every member signs up with a @students.jkuat.ac.ke email and confirms it with a one-time code.' },
   { title: 'Your email stays private', text: 'Others browse your preferred name. Your student email is never shown to anyone.' },
   { title: 'A New Catch Match you can understand', text: 'We show why you might click, such as shared interests, music and campus. No black box.' },
   { title: 'Friends, study buddies and more', text: 'Choose what you are looking for, from networking and activity partners to dating or just exploring.' },

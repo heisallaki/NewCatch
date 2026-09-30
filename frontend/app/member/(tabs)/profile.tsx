@@ -8,6 +8,7 @@ import { GlassCard } from '@/components/GlassCard';
 import { Notice } from '@/components/Notice';
 import { Screen } from '@/components/Screen';
 import { Body, Heading, Muted } from '@/components/Typography';
+import { genderLabel } from '@/constants/options';
 import { POLICIES, PolicySlug, SUPPORT_EMAIL } from '@/constants/policies';
 import { colors, radius } from '@/constants/theme';
 import { useAuth } from '@/features/auth/AuthContext';
@@ -35,6 +36,8 @@ export default function Profile() {
     router.replace('/');
   }
 
+  const gender = profile ? genderLabel(profile.gender, profile.gender_custom) : '';
+
   return (
     <Screen>
       <Heading level={1} style={{ marginBottom: 16 }}>
@@ -43,7 +46,7 @@ export default function Profile() {
       {profile && !profile.complete ? (
         <Notice
           tone="info"
-          message="Your profile is not complete yet, so you cannot discover people. Add a photo, interests and what you are looking for."
+          message="Your profile is not complete yet, so you cannot discover people. Add a photo, your gender, interests and what you are looking for."
           actionLabel="Complete profile"
           onAction={() => router.push('/member/edit-profile')}
         />
@@ -62,6 +65,7 @@ export default function Profile() {
         </Heading>
         <Muted style={{ marginTop: 2 }}>{user?.profile?.full_name}</Muted>
         <View style={{ marginTop: 12, gap: 4 }}>
+          {gender ? <Body>{gender}</Body> : null}
           <Body>{user?.profile?.campus}</Body>
           <Body>{user?.profile?.year_of_study}</Body>
           <Body>{user?.profile?.course}</Body>
@@ -78,6 +82,11 @@ export default function Profile() {
           <Button title="Edit profile" onPress={() => router.push('/member/edit-profile')} />
         </View>
       </GlassCard>
+
+      <Heading level={2} style={{ marginTop: 24, marginBottom: 12 }}>
+        Safety
+      </Heading>
+      <Button title="Blocked users" variant="secondary" onPress={() => router.push('/member/blocked')} />
 
       <Heading level={2} style={{ marginTop: 24, marginBottom: 12 }}>
         Policies and support

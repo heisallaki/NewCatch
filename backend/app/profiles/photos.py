@@ -23,11 +23,11 @@ def invalid_image(message: str = "That file isn't a valid photo.") -> ApiError:
     return ApiError(400, "invalid_image", message)
 
 
-def upload_root() -> Path:
+def upload_root(folder: str = "photos") -> Path:
     root = Path(settings.upload_dir)
     if not root.is_absolute():
         root = Path(__file__).resolve().parents[2] / root
-    root = root / "photos"
+    root = root / folder
     root.mkdir(parents=True, exist_ok=True)
     return root
 
@@ -43,22 +43,22 @@ def decode_upload(data: str) -> bytes:
     if not raw:
         raise invalid_image()
     if len(raw) > settings.max_upload_bytes:
-        raise ApiError(413, "file_too_large", "That photo is too large. Try a smaller one.")
+        raise ApiError(413, "file_too_large", "That image is too large. Try a smaller one.")
     return raw
 
 
-def process_image(raw: bytes) -> tuple[bytes, int, int]:
+def process_image(raw: bytes, max_dimension: int = MAX_DIMENSION) -> tuple[bytes, int, int]:
     try:
         with Image.open(io.BytesIO(raw)) as probe:
             if probe.format not in ALLOWED_FORMATS:
-                raise invalid_image("Only JPEG, PNG or WebP photos are allowed.")
+                raise invalid_image("Only JPEG, PNG or WebP images are allowed.")
             probe.verify()
         with Image.open(io.BytesIO(raw)) as image:
             oriented = ImageOps.exif_transpose(image)
             if min(oriented.size) < MIN_SIDE:
-                raise invalid_image("Photo is too small. Use at least 200 pixels on each side.")
+                raise invalid_image("Image is too small. Use at least 200 pixels on each side.")
             rgb = oriented.convert("RGB")
-            rgb.thumbnail((MAX_DIMENSION, MAX_DIMENSION))
+            rgb.thumbnail((max_dimension, max_dimension))
             output = io.BytesIO()
             rgb.save(output, format="JPEG", quality=85, optimize=True)
             return output.getvalue(), rgb.size[0], rgb.size[1]
@@ -68,18 +68,18 @@ def process_image(raw: bytes) -> tuple[bytes, int, int]:
         raise invalid_image()
 
 
-def save_file(data: bytes) -> str:
+def save_file(data: bytes, folder: str = "photos") -> str:
     filename = f"{uuid.uuid4().hex}.jpg"
-    (upload_root() / filename).write_bytes(data)
+    (upload_root(folder) / filename).write_bytes(data)
     return filename
 
 
-def file_path(filename: str) -> Path:
+def file_path(filename: str, folder: str = "photos") -> Path:
     if not FILENAME_PATTERN.match(filename):
         raise ApiError(404, "not_found", "Not Found")
-    return upload_root() / filename
+    return upload_root(folder) / filename
 
 
-def delete_file(filename: str) -> None:
+def delete_file(filename: str, folder: str = "photos") -> None:
     if FILENAME_PATTERN.match(filename):
-        (upload_root() / filename).unlink(missing_ok=True)
+        (upload_root(folder) / filename).unlink(missing_ok=True)

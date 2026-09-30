@@ -1,57 +1,18 @@
-from datetime import timedelta
-from typing import Optional
-
 from fastapi import APIRouter, BackgroundTasks, Depends
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.appeals.service import appeal_eligibility, build_account_status, latest_appeal
 from app.config import settings
-from app.constants import APPEAL_PENDING, APPEAL_REJECTED, STATUS_DEACTIVATED
+from app.constants import APPEAL_KIND_DEACTIVATION
 from app.database import get_db
 from app.deps import get_current_user, rate_limit
 from app.errors import ApiError
-from app.models import Appeal, User, utcnow
+from app.models import Appeal, User
 from app.notifications.email import send_email
 from app.schemas import AppealPayload
-from app.serializers import appeal_out, iso, user_out
+from app.serializers import user_out
 
 router = APIRouter(prefix="/users", tags=["users"])
-
-
-def latest_appeal(db: Session, user: User) -> Optional[Appeal]:
-    return db.scalar(select(Appeal).where(Appeal.user_id == user.id).order_by(Appeal.created_at.desc()))
-
-
-def appeal_eligibility(user: User, latest: Optional[Appeal]):
-    if user.status != STATUS_DEACTIVATED:
-        return False, None
-    if latest is not None and latest.status == APPEAL_PENDING:
-        return False, None
-    if (
-        latest is not None
-        and latest.status == APPEAL_REJECTED
-        and latest.reviewed_at is not None
-        and user.deactivated_at is not None
-        and latest.reviewed_at >= user.deactivated_at
-    ):
-        next_at = latest.reviewed_at + timedelta(days=settings.appeal_cooldown_days)
-        if next_at > utcnow():
-            return False, next_at
-    return True, None
-
-
-def build_account_status(db: Session, user: User) -> dict:
-    latest = latest_appeal(db, user)
-    can_appeal, next_at = appeal_eligibility(user, latest)
-    return {
-        "status": user.status,
-        "reason": user.deactivation_reason,
-        "deactivated_at": iso(user.deactivated_at),
-        "support_email": settings.support_email,
-        "can_appeal": can_appeal,
-        "next_appeal_at": iso(next_at),
-        "latest_appeal": appeal_out(latest) if latest else None,
-    }
 
 
 @router.get("/me")
@@ -74,7 +35,7 @@ def create_appeal(
     can_appeal, _ = appeal_eligibility(user, latest_appeal(db, user))
     if not can_appeal:
         raise ApiError(409, "appeal_not_allowed", "You can't submit an appeal right now.")
-    appeal = Appeal(user_id=user.id, message=payload.message)
+    appeal = Appeal(user_id=user.id, kind=APPEAL_KIND_DEACTIVATION, message=payload.message)
     db.add(appeal)
     db.commit()
     background.add_task(

@@ -12,6 +12,7 @@ import { Body, Heading, Muted } from '@/components/Typography';
 import { colors, radius } from '@/constants/theme';
 import { MatchModal } from '@/features/discovery/MatchModal';
 import { MatchBadge } from '@/features/discovery/ProfileCard';
+import { useAction } from '@/hooks/useAction';
 import { api, describeError, Failure } from '@/services/api';
 import { mediaUrl } from '@/services/media';
 import type { Card, OpenedProfile, SwipeResult } from '@/types';
@@ -20,14 +21,15 @@ export default function PersonProfile() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [profile, setProfile] = useState<OpenedProfile | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<Failure | null>(null);
+  const [loadError, setLoadError] = useState<Failure | null>(null);
   const [matched, setMatched] = useState<Card | null>(null);
+  const [confirm, setConfirm] = useState<'block' | 'unmatch' | null>(null);
+  const { busy, error, run } = useAction();
 
   useEffect(() => {
     api<OpenedProfile>(`/profiles/${id}`)
       .then(setProfile)
-      .catch((e) => setError(describeError(e)));
+      .catch((e) => setLoadError(describeError(e)));
   }, [id]);
 
   function goBack() {
@@ -35,37 +37,43 @@ export default function PersonProfile() {
     else router.replace('/member/discover');
   }
 
-  async function respond(action: 'catch' | 'swerve') {
+  function respond(action: 'catch' | 'swerve') {
     if (!profile) return;
-    setBusy(true);
-    setError(null);
-    try {
+    run(async () => {
       const result = await api<SwipeResult>('/discovery/swipe', {
         method: 'POST',
         body: { user_id: profile.user_id, action },
       });
       if (result.matched && result.person) setMatched(result.person);
       else goBack();
-    } catch (e) {
-      setError(describeError(e));
-    } finally {
-      setBusy(false);
-    }
+    });
+  }
+
+  function applySafety() {
+    if (!profile || !confirm) return;
+    const path = confirm === 'block' ? 'block' : 'unmatch';
+    run(async () => {
+      await api(`/safety/${path}/${profile.user_id}`, { method: 'POST' });
+      setConfirm(null);
+      router.replace('/member/discover');
+    });
   }
 
   if (!profile) {
-    if (error) {
+    if (loadError) {
       return (
         <Screen>
           <Button title="Back" variant="secondary" onPress={goBack} />
           <View style={{ marginTop: 16 }}>
-            <ErrorNotice error={error} />
+            <ErrorNotice error={loadError} />
           </View>
         </Screen>
       );
     }
     return <Loader />;
   }
+
+  const isSelf = profile.relationship === 'self';
 
   return (
     <Screen>
@@ -84,10 +92,11 @@ export default function PersonProfile() {
         <Heading level={1}>{profile.name}</Heading>
         <Body style={{ marginTop: 4 }}>{profile.course}</Body>
         <Muted>
+          {profile.gender ? `${profile.gender} · ` : ''}
           {profile.year_of_study} · {profile.campus}
           {profile.graduation_year ? ` · Class of ${profile.graduation_year}` : ''}
         </Muted>
-        {profile.relationship !== 'self' ? <MatchBadge match={profile.match} /> : null}
+        {!isSelf ? <MatchBadge match={profile.match} /> : null}
 
         {profile.bio ? (
           <View style={styles.section}>
@@ -128,8 +137,11 @@ export default function PersonProfile() {
       </GlassCard>
 
       <View style={{ marginTop: 16 }}>
-        {profile.relationship === 'matched' ? (
-          <Notice tone="success" message="It's a New Catch! 🎉 You both Caught each other. Chat arrives in the next phase." />
+        {profile.relationship === 'matched' && profile.match_id ? (
+          <View>
+            <Notice tone="success" message="It's a New Catch! 🎉 You both Caught each other." />
+            <Button title="Message" onPress={() => router.push(`/member/chat/${profile.match_id}`)} />
+          </View>
         ) : null}
         {profile.relationship === 'caught' ? (
           <Notice tone="info" message="You Caught them. If they Catch you back, it becomes a New Catch." />
@@ -141,6 +153,38 @@ export default function PersonProfile() {
           </View>
         ) : null}
       </View>
+
+      {!isSelf ? (
+        <View style={{ marginTop: 24 }}>
+          <Heading level={3} style={{ marginBottom: 10 }}>
+            Safety
+          </Heading>
+          {confirm ? (
+            <View>
+              <Notice
+                tone="error"
+                message={
+                  confirm === 'block'
+                    ? 'Block this person? You will not see each other and any chat will be deleted.'
+                    : 'Unmatch this person? The chat will be deleted and you will not be able to Catch them again.'
+                }
+              />
+              <View style={styles.actions}>
+                <Button title="Confirm" variant="danger" onPress={applySafety} loading={busy} style={{ flex: 1 }} />
+                <Button title="Cancel" variant="secondary" onPress={() => setConfirm(null)} style={{ flex: 1 }} />
+              </View>
+            </View>
+          ) : (
+            <View style={{ gap: 10 }}>
+              <Button title="Report user" variant="secondary" onPress={() => router.push(`/member/report/${profile.user_id}`)} />
+              {profile.relationship === 'matched' ? (
+                <Button title="Unmatch" variant="secondary" onPress={() => setConfirm('unmatch')} />
+              ) : null}
+              <Button title="Block" variant="secondary" onPress={() => setConfirm('block')} />
+            </View>
+          )}
+        </View>
+      ) : null}
 
       <MatchModal
         person={matched}
