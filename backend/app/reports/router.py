@@ -9,6 +9,17 @@ from app.constants import REPORT_REASONS
 from app.database import get_db
 from app.deps import get_active_user, rate_limit
 from app.errors import ApiError
+from typing import Optional
+
+from fastapi import APIRouter, BackgroundTasks, Depends
+from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
+
+from app.config import settings
+from app.constants import REPORT_REASONS
+from app.database import get_db
+from app.deps import get_active_user, rate_limit
+from app.errors import ApiError
 from app.models import Report, User
 from app.notifications.email import send_email
 from app.profiles.photos import ALLOWED_MIME, decode_upload, invalid_image, process_image, save_file
@@ -20,7 +31,7 @@ router = APIRouter(prefix="/reports", tags=["reports"])
 class ReportPayload(BaseModel):
     reported_user_id: int
     reason: str = Field(max_length=30)
-    description: str = Field(min_length=10, max_length=1000)
+    description: text(10, 1000)
     screenshot: Optional[str] = Field(default=None, max_length=14_000_000)
     screenshot_mime: Optional[str] = Field(default=None, max_length=50)
 

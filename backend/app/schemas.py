@@ -1,43 +1,21 @@
 import re
-from typing import Annotated, Literal, Optional, TypeAlias
+from typing import Annotated, Literal, Optional
 
 from pydantic import BaseModel, Field, StringConstraints, field_validator, model_validator
 
 from app.constants import EMAIL_PATTERN, GENDERS
 
-JkuatEmail: TypeAlias = Annotated[
+JkuatEmail = Annotated[
     str,
     StringConstraints(strip_whitespace=True, to_lower=True, max_length=255, pattern=EMAIL_PATTERN),
 ]
-OtpValue: TypeAlias = Annotated[str, StringConstraints(strip_whitespace=True, pattern=r"^\d{6}$")]
+OtpValue = Annotated[str, StringConstraints(strip_whitespace=True, pattern=r"^\d{6}$")]
 
 GENDER_CUSTOM_PATTERN = re.compile(r"^\w[\w \-']{1,29}$")
 
 
-FullNameText: TypeAlias = Annotated[
-    str,
-    StringConstraints(strip_whitespace=True, min_length=2, max_length=100),
-]
-DisplayNameText: TypeAlias = Annotated[
-    str,
-    StringConstraints(strip_whitespace=True, min_length=2, max_length=40),
-]
-CourseText: TypeAlias = Annotated[
-    str,
-    StringConstraints(strip_whitespace=True, min_length=2, max_length=120),
-]
-AppealMessageText: TypeAlias = Annotated[
-    str,
-    StringConstraints(strip_whitespace=True, min_length=20, max_length=2000),
-]
-ReasonText: TypeAlias = Annotated[
-    str,
-    StringConstraints(strip_whitespace=True, min_length=5, max_length=500),
-]
-AppealResponseText: TypeAlias = Annotated[
-    str,
-    StringConstraints(strip_whitespace=True, min_length=3, max_length=1000),
-]
+def text(min_length: int, max_length: int):
+    return Annotated[str, StringConstraints(strip_whitespace=True, min_length=min_length, max_length=max_length)]
 
 
 def check_password_strength(value: str) -> str:
@@ -71,13 +49,13 @@ class OtpPayload(BaseModel):
 class RegisterCompletePayload(BaseModel):
     registration_token: str = Field(max_length=2000)
     password: str = Field(min_length=10, max_length=128)
-    full_name: FullNameText
-    display_name: DisplayNameText
+    full_name: text(2, 100)
+    display_name: text(2, 40)
     campus: str = Field(max_length=60)
     year_of_study: str = Field(max_length=20)
     gender: str = Field(max_length=20)
     gender_custom: Optional[str] = Field(default=None, max_length=30)
-    course: CourseText
+    course: text(2, 120)
     graduation_year: Optional[int] = Field(default=None, ge=2020, le=2045)
     accepted_policy_version: str = Field(max_length=20)
 
@@ -118,18 +96,18 @@ class RefreshPayload(BaseModel):
 
 
 class AppealPayload(BaseModel):
-    message: AppealMessageText
+    message: text(20, 2000)
 
 
 class ReasonPayload(BaseModel):
-    reason: ReasonText
+    reason: text(5, 500)
 
 
 class AppealReviewPayload(BaseModel):
     decision: Literal["accept", "reject"]
-    response: AppealResponseText
+    response: text(3, 1000)
 
 
 class ReportResolvePayload(BaseModel):
     action: Literal["dismiss", "reviewed", "deactivate", "blacklist"]
-    note: ReasonText
+    note: text(5, 500)

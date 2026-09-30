@@ -23,7 +23,7 @@ INVALID_OTP_MESSAGE = "That code is invalid or has expired."
 
 class BlacklistAppealPayload(BaseModel):
     appeal_token: str = Field(max_length=2000)
-    message: str = Field(min_length=20, max_length=2000)
+    message: text(20, 2000)
 
 
 def blacklisted_user(db: Session, email: str):
