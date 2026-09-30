@@ -1,4 +1,4 @@
-EMAIL_PATTERN = r"(?i)^[a-z0-9._%+\-]{1,64}@student\.jkuat\.ac\.ke$"
+EMAIL_PATTERN = r"(?i)^[a-z0-9._%+\-]{1,64}@students\.jkuat\.ac\.ke$"
 
 CAMPUSES = [
     "Main Campus",
@@ -22,6 +22,37 @@ YEARS = [
     "5th Year",
     "6th Year",
     "Other",
+]
+
+MUSIC_GENRES = [
+    "R&B",
+    "Afrobeats",
+    "Hip-Hop",
+    "Amapiano",
+    "Gospel",
+    "Reggae",
+    "Dancehall",
+    "Gengetone",
+    "Jazz",
+    "Rock",
+    "Pop",
+    "Classical",
+    "Country",
+    "Electronic",
+    "Soul",
+    "Blues",
+    "Alternative",
+    "Other",
+]
+
+LOOKING_FOR = [
+    "Friendship",
+    "Networking",
+    "Study buddy",
+    "Activity partner",
+    "Dating",
+    "New people",
+    "I'm just exploring",
 ]
 
 STATUS_ACTIVE = "active"

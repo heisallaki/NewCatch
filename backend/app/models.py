@@ -1,7 +1,18 @@
 from datetime import datetime, timezone
 from typing import Optional
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -27,6 +38,9 @@ class User(Base):
     profile: Mapped[Optional["Profile"]] = relationship(
         back_populates="user", uselist=False, cascade="all, delete-orphan"
     )
+    photos: Mapped[list["Photo"]] = relationship(
+        order_by="Photo.position", cascade="all, delete-orphan"
+    )
 
 
 class Profile(Base):
@@ -40,8 +54,56 @@ class Profile(Base):
     year_of_study: Mapped[str] = mapped_column(String(20))
     course: Mapped[str] = mapped_column(String(120))
     graduation_year: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    bio: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    interests: Mapped[list] = mapped_column(JSON, default=list)
+    music_genres: Mapped[list] = mapped_column(JSON, default=list)
+    looking_for: Mapped[list] = mapped_column(JSON, default=list)
+    favourite_artist: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    visibility: Mapped[str] = mapped_column(String(20), default="everyone")
+    discovery_scope: Mapped[str] = mapped_column(String(20), default="all")
+    opened_name: Mapped[str] = mapped_column(String(20), default="full_name")
 
     user: Mapped["User"] = relationship(back_populates="profile")
+
+
+class Photo(Base):
+    __tablename__ = "photos"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    filename: Mapped[str] = mapped_column(String(64), unique=True)
+    position: Mapped[int] = mapped_column(Integer, default=0)
+    status: Mapped[str] = mapped_column(String(20), default="approved")
+    width: Mapped[int] = mapped_column(Integer)
+    height: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class Swipe(Base):
+    __tablename__ = "swipes"
+    __table_args__ = (
+        UniqueConstraint("from_user_id", "to_user_id", name="uq_swipes_pair"),
+        Index("ix_swipes_to_user_action", "to_user_id", "action"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    from_user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    to_user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    action: Mapped[str] = mapped_column(String(10))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class Match(Base):
+    __tablename__ = "matches"
+    __table_args__ = (
+        UniqueConstraint("user_a_id", "user_b_id", name="uq_matches_pair"),
+        CheckConstraint("user_a_id < user_b_id", name="ck_matches_order"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_a_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    user_b_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
 class OtpCode(Base):

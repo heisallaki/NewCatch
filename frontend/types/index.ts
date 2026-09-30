@@ -64,3 +64,61 @@ export type AdminUserDetail = {
   actions: AdminAction[];
   appeals: Appeal[];
 };
+
+export type PhotoRef = { id: number; url: string };
+
+export type MatchInfo = {
+  score: number;
+  explanation: string;
+  shared_interests: string[];
+};
+
+export type Card = {
+  user_id: number;
+  display_name: string;
+  course: string;
+  year_of_study: string;
+  campus: string;
+  interests: string[];
+  music_genres: string[];
+  looking_for: string[];
+  photo: PhotoRef | null;
+  match: MatchInfo;
+};
+
+export type OwnProfile = {
+  user_id: number;
+  full_name: string;
+  display_name: string;
+  opened_name: 'full_name' | 'display_name';
+  campus: string;
+  year_of_study: string;
+  course: string;
+  graduation_year: number | null;
+  bio: string | null;
+  interests: string[];
+  music_genres: string[];
+  favourite_artist: string | null;
+  looking_for: string[];
+  visibility: 'everyone' | 'matching' | 'hidden';
+  discovery_scope: 'all' | 'my_campus';
+  photos: PhotoRef[];
+  complete: boolean;
+  missing: string[];
+};
+
+export type OpenedProfile = Card & {
+  name: string;
+  bio: string | null;
+  favourite_artist: string | null;
+  graduation_year: number | null;
+  photos: PhotoRef[];
+  relationship: 'self' | 'matched' | 'caught' | 'swerved' | 'none';
+};
+
+export type SwipeResult = { matched: boolean; person: Card | null };
+
+export type CatchesResponse = {
+  matches: { match_id: number; matched_at: string; person: Card }[];
+  waiting: Card[];
+};

@@ -31,6 +31,10 @@ class Settings(BaseSettings):
     smtp_from: str = ""
     support_email: str = "kal.projects.dev@gmail.com"
     policy_version: str = "2026-09-29"
+    upload_dir: str = "uploads"
+    max_photos: int = 6
+    max_upload_bytes: int = 9_000_000
+    media_token_minutes: int = 60
 
     @property
     def is_production(self) -> bool:
@@ -39,6 +43,10 @@ class Settings(BaseSettings):
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
+    @property
+    def max_body_bytes(self) -> int:
+        return self.max_upload_bytes * 4 // 3 + 65536
 
 
 settings = Settings()

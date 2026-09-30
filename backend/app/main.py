@@ -6,7 +6,10 @@ from fastapi.responses import JSONResponse
 from app.admin.router import router as admin_router
 from app.auth.router import router as auth_router
 from app.config import settings
+from app.discovery.router import router as discovery_router
 from app.errors import ApiError
+from app.profiles.router import media_router
+from app.profiles.router import router as profiles_router
 from app.users.router import router as users_router
 
 
@@ -33,6 +36,23 @@ app = FastAPI(
     openapi_url=None if settings.is_production else "/openapi.json",
 )
 
+
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    length = request.headers.get("content-length")
+    if length and length.isdigit() and int(length) > settings.max_body_bytes:
+        return JSONResponse(
+            status_code=413,
+            content={"detail": "That upload is too large.", "code": "file_too_large"},
+        )
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["X-Robots-Tag"] = "noindex, nofollow"
+    response.headers.setdefault("Cache-Control", "no-store")
+    return response
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,
@@ -40,16 +60,6 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
     allow_headers=["Content-Type", "Authorization", "X-Requested-With", "X-Client-Type"],
 )
-
-
-@app.middleware("http")
-async def security_headers(request: Request, call_next):
-    response = await call_next(request)
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["Referrer-Policy"] = "no-referrer"
-    response.headers["X-Robots-Tag"] = "noindex, nofollow"
-    response.headers["Cache-Control"] = "no-store"
-    return response
 
 
 @app.exception_handler(ApiError)
@@ -72,4 +82,7 @@ def health():
 
 app.include_router(auth_router)
 app.include_router(users_router)
+app.include_router(profiles_router)
+app.include_router(media_router)
+app.include_router(discovery_router)
 app.include_router(admin_router)
