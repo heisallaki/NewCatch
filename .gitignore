@@ -1,4 +1,8 @@
 .env
+.env.*
+!.env.example
+!.env.production.example
+.dev.vars
 .venv/
 __pycache__/
 *.pyc
@@ -6,6 +10,7 @@ node_modules/
 .expo/
 dist/
 web-build/
+.wrangler/
 expo-env.d.ts
 frontend/public/sitemap.xml
 frontend/public/robots.txt

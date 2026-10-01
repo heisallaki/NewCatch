@@ -8,7 +8,8 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.heisallaki.newcatch"
     },
     "web": {
       "bundler": "metro",
@@ -35,6 +36,9 @@
         "projectId": "dc1ae0b3-a664-4247-8c7b-ac02fced32b0"
       }
     },
-    "owner": "heisallaki"
+    "owner": "heisallaki",
+    "android": {
+      "package": "com.heisallaki.newcatch"
+    }
   }
 }

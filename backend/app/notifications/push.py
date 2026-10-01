@@ -33,10 +33,13 @@ def send_push(tokens: list[str], title: str, body: str, data: dict) -> list[str]
         }
         for token in tokens
     ]
+    headers = {"Content-Type": "application/json", "Accept": "application/json"}
+    if settings.expo_access_token:
+        headers["Authorization"] = f"Bearer {settings.expo_access_token}"
     request = urllib.request.Request(
         settings.expo_push_url,
         data=json.dumps(messages).encode(),
-        headers={"Content-Type": "application/json", "Accept": "application/json"},
+        headers=headers,
         method="POST",
     )
     try:

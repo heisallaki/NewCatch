@@ -1,5 +1,5 @@
-import { API_URL } from './api';
+import { MEDIA_URL } from './config';
 
 export function mediaUrl(path: string): string {
-  return `${API_URL}${path}`;
+  return `${MEDIA_URL}${path}`;
 }

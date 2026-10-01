@@ -1,8 +1,10 @@
 import { Platform } from 'react-native';
 
+import { API_URL } from './config';
 import { clearTokens, getTokens, setTokens } from './storage';
 
-export const API_URL = (process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8000').replace(/\/$/, '');
+export { API_URL };
+
 const isWeb = Platform.OS === 'web';
 
 export class ApiError extends Error {

@@ -30,5 +30,5 @@ class ProfileUpdatePayload(BaseModel):
 
 
 class PhotoUploadPayload(BaseModel):
-    image: str = Field(min_length=100)
+    image: str = Field(min_length=100, max_length=13_000_000)
     mime_type: Optional[str] = Field(default=None, max_length=50)

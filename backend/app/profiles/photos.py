@@ -1,14 +1,14 @@
 import base64
 import binascii
 import io
-import re
 import uuid
-from pathlib import Path
+from typing import Optional
 
 from PIL import Image, ImageOps, UnidentifiedImageError
 
 from app.config import settings
 from app.errors import ApiError
+from app.storage import storage
 
 Image.MAX_IMAGE_PIXELS = 40_000_000
 
@@ -16,20 +16,10 @@ ALLOWED_FORMATS = {"JPEG", "PNG", "WEBP"}
 ALLOWED_MIME = {"image/jpeg", "image/png", "image/webp"}
 MAX_DIMENSION = 1080
 MIN_SIDE = 200
-FILENAME_PATTERN = re.compile(r"^[0-9a-f]{32}\.jpg$")
 
 
 def invalid_image(message: str = "That file isn't a valid photo.") -> ApiError:
     return ApiError(400, "invalid_image", message)
-
-
-def upload_root(folder: str = "photos") -> Path:
-    root = Path(settings.upload_dir)
-    if not root.is_absolute():
-        root = Path(__file__).resolve().parents[2] / root
-    root = root / folder
-    root.mkdir(parents=True, exist_ok=True)
-    return root
 
 
 def decode_upload(data: str) -> bytes:
@@ -70,16 +60,13 @@ def process_image(raw: bytes, max_dimension: int = MAX_DIMENSION) -> tuple[bytes
 
 def save_file(data: bytes, folder: str = "photos") -> str:
     filename = f"{uuid.uuid4().hex}.jpg"
-    (upload_root(folder) / filename).write_bytes(data)
+    storage.put(folder, filename, data)
     return filename
 
 
-def file_path(filename: str, folder: str = "photos") -> Path:
-    if not FILENAME_PATTERN.match(filename):
-        raise ApiError(404, "not_found", "Not Found")
-    return upload_root(folder) / filename
+def read_file(filename: str, folder: str = "photos") -> Optional[bytes]:
+    return storage.get(folder, filename)
 
 
 def delete_file(filename: str, folder: str = "photos") -> None:
-    if FILENAME_PATTERN.match(filename):
-        (upload_root(folder) / filename).unlink(missing_ok=True)
+    storage.delete(folder, filename)

@@ -1,3 +1,5 @@
+import hmac
+
 from fastapi import Depends, Request
 from sqlalchemy.orm import Session
 
@@ -12,6 +14,22 @@ from app.security import decode_jwt, limiter
 SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
 
 
+def client_ip(request: Request) -> str:
+    secret = settings.proxy_shared_secret
+    if secret:
+        supplied = request.headers.get("x-proxy-secret", "")
+        if hmac.compare_digest(supplied.encode(), secret.encode()):
+            forwarded = request.headers.get("x-client-ip", "").strip()
+            if forwarded:
+                return forwarded
+    count = settings.trusted_proxy_count
+    if count > 0:
+        parts = [part.strip() for part in request.headers.get("x-forwarded-for", "").split(",") if part.strip()]
+        if len(parts) >= count:
+            return parts[-count]
+    return request.client.host if request.client else "unknown"
+
+
 def enforce_csrf(request: Request) -> None:
     if request.method in SAFE_METHODS:
         return
@@ -21,8 +39,7 @@ def enforce_csrf(request: Request) -> None:
 
 def rate_limit(name: str, limit: int, window_seconds: int):
     def dependency(request: Request) -> None:
-        ip = request.client.host if request.client else "unknown"
-        if not limiter.check(f"{name}:{ip}", limit, window_seconds):
+        if not limiter.check(f"{name}:{client_ip(request)}", limit, window_seconds):
             raise ApiError(429, "rate_limited", "Too many requests. Please wait a moment and try again.")
 
     return dependency

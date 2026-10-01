@@ -240,5 +240,5 @@ def logout(
         )
         db.commit()
     response.delete_cookie(ACCESS_COOKIE, path="/")
-    response.delete_cookie(REFRESH_COOKIE, path="/auth")
+    response.delete_cookie(REFRESH_COOKIE, path=settings.refresh_cookie_path)
     return {"ok": True}

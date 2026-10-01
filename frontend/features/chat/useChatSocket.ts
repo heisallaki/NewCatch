@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 
-import { api, API_URL } from '@/services/api';
+import { api } from '@/services/api';
+import { WS_URL } from '@/services/config';
 import type { ChatEvent } from '@/types';
 
 export type SocketStatus = 'connecting' | 'connected' | 'offline';
@@ -9,12 +10,13 @@ export type SocketStatus = 'connecting' | 'connected' | 'offline';
 const PING_MS = 25000;
 
 export function useChatSocket(onEvent: (event: ChatEvent) => void) {
-  const [status, setStatus] = useState<SocketStatus>('connecting');
+  const [status, setStatus] = useState<SocketStatus>(WS_URL ? 'connecting' : 'offline');
   const socketRef = useRef<WebSocket | null>(null);
   const handlerRef = useRef(onEvent);
   handlerRef.current = onEvent;
 
   useEffect(() => {
+    if (!WS_URL) return;
     let cancelled = false;
     let attempt = 0;
     let opening = false;
@@ -50,8 +52,7 @@ export function useChatSocket(onEvent: (event: ChatEvent) => void) {
       try {
         const { ticket } = await api<{ ticket: string }>('/chat/ticket', { method: 'POST' });
         if (cancelled) return;
-        const url = `${API_URL.replace(/^http/, 'ws')}/chat/ws?ticket=${encodeURIComponent(ticket)}`;
-        const socket = new WebSocket(url);
+        const socket = new WebSocket(`${WS_URL}/chat/ws?ticket=${encodeURIComponent(ticket)}`);
         socketRef.current = socket;
         socket.onopen = () => {
           attempt = 0;

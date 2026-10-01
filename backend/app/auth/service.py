@@ -133,6 +133,6 @@ def start_session(
         httponly=True,
         secure=settings.cookie_secure,
         samesite=settings.cookie_samesite,
-        path="/auth",
+        path=settings.refresh_cookie_path,
     )
     return None

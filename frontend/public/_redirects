@@ -1,0 +1,3 @@
+/member/people/*  /member/people/[id].html  200
+/member/chat/*  /member/chat/[matchId].html  200
+/member/report/*  /member/report/[id].html  200
