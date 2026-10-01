@@ -1,25 +1,52 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { AppState } from 'react-native';
 
 import { api, API_URL } from '@/services/api';
 import type { ChatEvent } from '@/types';
 
+export type SocketStatus = 'connecting' | 'connected' | 'offline';
+
+const PING_MS = 25000;
+
 export function useChatSocket(onEvent: (event: ChatEvent) => void) {
-  const [connected, setConnected] = useState(false);
+  const [status, setStatus] = useState<SocketStatus>('connecting');
   const socketRef = useRef<WebSocket | null>(null);
   const handlerRef = useRef(onEvent);
   handlerRef.current = onEvent;
 
   useEffect(() => {
     let cancelled = false;
-    let retry = 0;
-    let timer: ReturnType<typeof setTimeout> | undefined;
+    let attempt = 0;
+    let opening = false;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
+    let pingTimer: ReturnType<typeof setInterval> | undefined;
 
-    function schedule() {
-      retry += 1;
-      timer = setTimeout(connect, Math.min(1000 * 2 ** retry, 15000));
+    function stopPing() {
+      if (pingTimer) {
+        clearInterval(pingTimer);
+        pingTimer = undefined;
+      }
+    }
+
+    function scheduleRetry() {
+      if (cancelled || retryTimer) return;
+      attempt += 1;
+      setStatus('offline');
+      retryTimer = setTimeout(
+        () => {
+          retryTimer = undefined;
+          connect();
+        },
+        Math.min(1000 * 2 ** Math.min(attempt, 4), 15000)
+      );
     }
 
     async function connect() {
+      if (cancelled || opening) return;
+      const existing = socketRef.current;
+      if (existing && existing.readyState <= 1) return;
+      opening = true;
+      setStatus('connecting');
       try {
         const { ticket } = await api<{ ticket: string }>('/chat/ticket', { method: 'POST' });
         if (cancelled) return;
@@ -27,32 +54,74 @@ export function useChatSocket(onEvent: (event: ChatEvent) => void) {
         const socket = new WebSocket(url);
         socketRef.current = socket;
         socket.onopen = () => {
-          retry = 0;
-          setConnected(true);
+          attempt = 0;
+          setStatus('connected');
+          stopPing();
+          pingTimer = setInterval(() => {
+            if (socket.readyState === 1) socket.send(JSON.stringify({ type: 'ping' }));
+          }, PING_MS);
         };
         socket.onmessage = (event) => {
           try {
-            handlerRef.current(JSON.parse(String(event.data)) as ChatEvent);
+            const data = JSON.parse(String(event.data));
+            if (data && data.type && data.type !== 'pong') handlerRef.current(data as ChatEvent);
           } catch {
             return;
           }
         };
         socket.onclose = () => {
-          setConnected(false);
-          socketRef.current = null;
-          if (!cancelled) schedule();
+          stopPing();
+          if (socketRef.current === socket) socketRef.current = null;
+          scheduleRetry();
         };
-        socket.onerror = () => socket.close();
+        socket.onerror = () => {
+          try {
+            socket.close();
+          } catch {
+            return;
+          }
+        };
       } catch {
-        if (!cancelled) schedule();
+        scheduleRetry();
+      } finally {
+        opening = false;
       }
     }
 
+    function reconnectNow() {
+      if (cancelled) return;
+      if (retryTimer) {
+        clearTimeout(retryTimer);
+        retryTimer = undefined;
+      }
+      const stale = socketRef.current;
+      if (stale) {
+        socketRef.current = null;
+        stale.onclose = null;
+        try {
+          stale.close();
+        } catch {
+          stopPing();
+        }
+      }
+      stopPing();
+      connect();
+    }
+
+    const appState = AppState.addEventListener('change', (state) => {
+      if (state === 'active') reconnectNow();
+    });
+
     connect();
+
     return () => {
       cancelled = true;
-      if (timer) clearTimeout(timer);
-      socketRef.current?.close();
+      appState.remove();
+      stopPing();
+      if (retryTimer) clearTimeout(retryTimer);
+      const socket = socketRef.current;
+      socketRef.current = null;
+      if (socket) socket.close();
     };
   }, []);
 
@@ -63,5 +132,5 @@ export function useChatSocket(onEvent: (event: ChatEvent) => void) {
     return true;
   }, []);
 
-  return { connected, send };
+  return { status, connected: status === 'connected', send };
 }

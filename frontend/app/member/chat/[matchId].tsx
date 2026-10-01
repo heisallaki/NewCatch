@@ -30,24 +30,39 @@ export default function ChatScreen() {
   const [closed, setClosed] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
+  const lastSentRef = useRef('');
+  const lastIdRef = useRef(0);
+
+  const merge = useCallback((incoming: ChatMessage[]) => {
+    if (incoming.length === 0) return;
+    setMessages((current) => {
+      const known = new Set(current.map((item) => item.id));
+      const fresh = incoming.filter((item) => !known.has(item.id));
+      return fresh.length ? [...current, ...fresh].sort((a, b) => a.id - b.id) : current;
+    });
+  }, []);
+
+  useEffect(() => {
+    lastIdRef.current = messages.length ? messages[messages.length - 1].id : 0;
+  }, [messages]);
 
   const onEvent = useCallback(
     (event: ChatEvent) => {
-      if (event.type === 'message' && event.message.match_id === id) {
-        setMessages((current) =>
-          current.some((item) => item.id === event.message.id) ? current : [...current, event.message]
-        );
-      } else if (event.type === 'chat_closed' && event.match_id === id) {
-        setClosed('This conversation has ended.');
+      if (event.type === 'message') {
+        if (event.message.match_id === id) merge([event.message]);
+      } else if (event.type === 'chat_closed') {
+        if (event.match_id === id) setClosed('This conversation has ended.');
       } else if (event.type === 'error') {
         setNotice(event.detail);
+        setText((current) => current || lastSentRef.current);
       }
     },
-    [id]
+    [id, merge]
   );
 
-  const { connected, send } = useChatSocket(onEvent);
+  const { status, connected, send } = useChatSocket(onEvent);
 
   useEffect(() => {
     api<{ other: MiniPerson; messages: ChatMessage[] }>(`/chat/${id}/messages`)
@@ -59,20 +74,61 @@ export default function ChatScreen() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  const catchUp = useCallback(async () => {
+    try {
+      const data = await api<{ messages: ChatMessage[] }>(`/chat/${id}/messages?after_id=${lastIdRef.current}`);
+      merge(data.messages);
+    } catch (e) {
+      const failure = describeError(e);
+      if (failure.code === 'not_found') setClosed(failure.message);
+    }
+  }, [id, merge]);
+
+  useEffect(() => {
+    if (loading || closed) return;
+    if (connected) {
+      catchUp();
+      return;
+    }
+    const timer = setInterval(catchUp, 4000);
+    return () => clearInterval(timer);
+  }, [loading, closed, connected, catchUp]);
+
   function goBack() {
     if (router.canGoBack()) router.back();
     else router.replace('/member/chats');
   }
 
-  function submit() {
+  async function submit() {
     const body = text.trim();
-    if (!body) return;
-    if (!send({ type: 'message', match_id: id, body })) {
-      setNotice('Not connected yet. Please wait a moment and try again.');
+    if (!body || sending) return;
+    setNotice(null);
+    lastSentRef.current = body;
+    if (connected && send({ type: 'message', match_id: id, body })) {
+      setText('');
       return;
     }
-    setNotice(null);
-    setText('');
+    setSending(true);
+    try {
+      const message = await api<ChatMessage>(`/chat/${id}/messages`, { method: 'POST', body: { body } });
+      merge([message]);
+      setText('');
+    } catch (e) {
+      const failure = describeError(e);
+      if (failure.code === 'unavailable') setClosed(failure.message);
+      else setNotice(failure.message);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  function onKeyPress(event: any) {
+    if (Platform.OS !== 'web') return;
+    const native = event.nativeEvent;
+    if (native?.key === 'Enter' && !native.shiftKey) {
+      event.preventDefault();
+      submit();
+    }
   }
 
   if (loading) return <Loader />;
@@ -120,24 +176,29 @@ export default function ChatScreen() {
           </View>
         </ScrollView>
 
-        <View style={[styles.composer, { paddingBottom: insets.bottom + 10 }]}>
+        <View style={[styles.composer, { paddingBottom: insets.bottom + 8 }]}>
           <View style={styles.column}>
             {closed ? <Notice tone="error" message={closed} /> : null}
             {notice ? <Notice tone="error" message={notice} /> : null}
-            {!connected && !closed ? <Muted style={{ marginBottom: 6 }}>Connecting...</Muted> : null}
+            {!closed && status !== 'connected' ? (
+              <Muted style={{ marginBottom: 6 }}>
+                {status === 'connecting' ? 'Connecting...' : 'Reconnecting... your messages still send.'}
+              </Muted>
+            ) : null}
             {!closed ? (
               <View style={styles.inputRow}>
                 <TextInput
                   accessibilityLabel="Message"
                   value={text}
                   onChangeText={setText}
+                  onKeyPress={onKeyPress}
                   placeholder="Write a message"
                   placeholderTextColor="rgba(255,255,255,0.45)"
                   multiline
                   maxLength={1000}
                   style={styles.input}
                 />
-                <Button title="Send" onPress={submit} disabled={!connected || !text.trim()} style={styles.send} />
+                <Button title="Send" onPress={submit} loading={sending} disabled={!text.trim()} style={styles.send} />
               </View>
             ) : (
               <Button title="Back to chats" variant="secondary" onPress={() => router.replace('/member/chats')} />
@@ -155,45 +216,45 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    paddingHorizontal: 16,
-    paddingBottom: 10,
+    paddingHorizontal: 14,
+    paddingBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  headerButton: { minHeight: 44, paddingHorizontal: 16 },
-  title: { flex: 1, color: colors.text, fontSize: 18, fontWeight: '700', textAlign: 'center' },
-  list: { flexGrow: 1, alignItems: 'center', padding: 16 },
+  headerButton: { minHeight: 40, paddingHorizontal: 14 },
+  title: { flex: 1, color: colors.text, fontSize: 17, fontWeight: '700', textAlign: 'center' },
+  list: { flexGrow: 1, alignItems: 'center', padding: 14 },
   column: { width: '100%', maxWidth: 640, alignSelf: 'center' },
   empty: { textAlign: 'center', marginTop: 24 },
-  row: { flexDirection: 'row', marginBottom: 8 },
+  row: { flexDirection: 'row', marginBottom: 6 },
   rowMine: { justifyContent: 'flex-end' },
   rowTheirs: { justifyContent: 'flex-start' },
-  bubble: { maxWidth: '82%', paddingHorizontal: 14, paddingVertical: 10, borderRadius: radius.md },
+  bubble: { maxWidth: '82%', paddingHorizontal: 12, paddingVertical: 8, borderRadius: radius.md },
   bubbleMine: { backgroundColor: 'rgba(255,77,141,0.55)' },
   bubbleTheirs: { backgroundColor: colors.glassStrong, borderWidth: 1, borderColor: colors.border },
-  body: { color: colors.text, fontSize: 16, lineHeight: 22 },
-  time: { color: colors.muted, fontSize: 11, marginTop: 4, alignSelf: 'flex-end' },
+  body: { color: colors.text, fontSize: 15, lineHeight: 21 },
+  time: { color: colors.muted, fontSize: 11, marginTop: 3, alignSelf: 'flex-end' },
   composer: {
-    paddingHorizontal: 16,
-    paddingTop: 10,
+    paddingHorizontal: 14,
+    paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: colors.border,
     backgroundColor: 'rgba(15,23,42,0.85)',
   },
-  inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 10 },
+  inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
   input: {
     flex: 1,
-    minHeight: 50,
-    maxHeight: 120,
+    minHeight: 44,
+    maxHeight: 110,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.inputBg,
     color: colors.text,
-    paddingHorizontal: 14,
-    paddingTop: 13,
-    paddingBottom: 13,
-    fontSize: 16,
+    paddingHorizontal: 12,
+    paddingTop: 11,
+    paddingBottom: 11,
+    fontSize: 15,
   },
-  send: { minHeight: 50, paddingHorizontal: 20 },
+  send: { minHeight: 44, paddingHorizontal: 18 },
 });

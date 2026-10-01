@@ -11,6 +11,7 @@ from app.config import settings
 from app.discovery.router import router as discovery_router
 from app.errors import ApiError
 from app.media.router import router as media_router
+from app.notifications.router import router as push_router
 from app.profiles.router import router as profiles_router
 from app.reports.router import router as reports_router
 from app.safety.router import router as safety_router
@@ -93,4 +94,5 @@ app.include_router(discovery_router)
 app.include_router(safety_router)
 app.include_router(reports_router)
 app.include_router(chat_router)
+app.include_router(push_router)
 app.include_router(admin_router)

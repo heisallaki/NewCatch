@@ -22,7 +22,19 @@
         {
           "photosPermission": "Allow New Catch to access your photos so you can add profile pictures."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#ff4d8d"
+        }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "dc1ae0b3-a664-4247-8c7b-ac02fced32b0"
+      }
+    },
+    "owner": "heisallaki"
   }
 }

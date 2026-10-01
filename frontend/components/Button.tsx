@@ -45,9 +45,9 @@ export function Button({ title, onPress, variant = 'primary', loading = false, d
 
 const styles = StyleSheet.create({
   base: {
-    minHeight: 50,
+    minHeight: 44,
     borderRadius: radius.pill,
-    paddingHorizontal: 20,
+    paddingHorizontal: 18,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -56,5 +56,5 @@ const styles = StyleSheet.create({
   danger: { backgroundColor: 'rgba(255,107,122,0.85)' },
   inactive: { opacity: 0.55 },
   pressed: { opacity: 0.85 },
-  label: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  label: { color: '#fff', fontSize: 15, fontWeight: '700' },
 });

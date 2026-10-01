@@ -1,6 +1,7 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import { api } from '@/services/api';
+import { unregisterPush } from '@/services/push';
 import { clearTokens, getTokens, setTokens } from '@/services/storage';
 import type { SessionResponse, User } from '@/types';
 
@@ -39,6 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    await unregisterPush();
     try {
       const tokens = await getTokens();
       await api('/auth/logout', { method: 'POST', body: { refresh_token: tokens.refresh } });

@@ -23,5 +23,5 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.glass,
   },
-  inner: { padding: 20 },
+  inner: { padding: 16 },
 });

@@ -35,6 +35,8 @@ class Settings(BaseSettings):
     max_photos: int = 6
     max_upload_bytes: int = 9_000_000
     media_token_minutes: int = 60
+    push_enabled: bool = True
+    expo_push_url: str = "https://exp.host/--/api/v2/push/send"
 
     @property
     def is_production(self) -> bool:

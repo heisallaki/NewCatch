@@ -18,7 +18,7 @@ export function Chip({ label, selected = false, highlight = false, onPress }: Pr
       accessibilityRole="checkbox"
       accessibilityLabel={label}
       accessibilityState={{ checked: selected }}
-      hitSlop={4}
+      hitSlop={6}
       onPress={onPress}
       style={style}
     >
@@ -29,8 +29,8 @@ export function Chip({ label, selected = false, highlight = false, onPress }: Pr
 
 const styles = StyleSheet.create({
   chip: {
-    minHeight: 36,
-    paddingHorizontal: 14,
+    minHeight: 32,
+    paddingHorizontal: 12,
     borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.border,
@@ -40,5 +40,5 @@ const styles = StyleSheet.create({
   },
   selected: { backgroundColor: 'rgba(255,77,141,0.35)', borderColor: colors.accent },
   highlight: { backgroundColor: 'rgba(255,138,92,0.3)', borderColor: colors.accentAlt },
-  text: { color: colors.text, fontSize: 14, fontWeight: '600' },
+  text: { color: colors.text, fontSize: 13, fontWeight: '600' },
 });

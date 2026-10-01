@@ -5,7 +5,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors } from '@/constants/theme';
 
-export function Screen({ children, maxWidth = 560 }: { children: ReactNode; maxWidth?: number }) {
+type Props = { children: ReactNode; maxWidth?: number; overlay?: ReactNode };
+
+export function Screen({ children, maxWidth = 560, overlay }: Props) {
   const insets = useSafeAreaInsets();
   return (
     <LinearGradient colors={colors.gradient} style={styles.fill}>
@@ -14,12 +16,13 @@ export function Screen({ children, maxWidth = 560 }: { children: ReactNode; maxW
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={[
             styles.content,
-            { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32 },
+            { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 },
           ]}
         >
           <View style={[styles.column, { maxWidth }]}>{children}</View>
         </ScrollView>
       </KeyboardAvoidingView>
+      {overlay ? <View style={[StyleSheet.absoluteFill, styles.overlay]}>{overlay}</View> : null}
     </LinearGradient>
   );
 }
@@ -35,6 +38,7 @@ export function Loader() {
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   center: { alignItems: 'center', justifyContent: 'center' },
-  content: { flexGrow: 1, alignItems: 'center', paddingHorizontal: 16 },
+  content: { flexGrow: 1, alignItems: 'center', paddingHorizontal: 14 },
   column: { width: '100%' },
+  overlay: { pointerEvents: 'none' },
 });

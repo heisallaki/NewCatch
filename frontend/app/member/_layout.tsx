@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { Loader } from '@/components/Screen';
 import { Seo } from '@/components/Seo';
 import { useAuth } from '@/features/auth/AuthContext';
+import { usePushNotifications } from '@/features/notifications/usePushNotifications';
 
 export default function MemberLayout() {
   const { user, loading } = useAuth();
@@ -12,6 +13,8 @@ export default function MemberLayout() {
   const onDeactivatedScreen = segments[1] === 'deactivated';
   const deactivated = user?.status === 'deactivated';
   const misrouted = (deactivated && !onDeactivatedScreen) || (!deactivated && onDeactivatedScreen);
+
+  usePushNotifications(user?.status === 'active');
 
   useEffect(() => {
     if (loading) return;

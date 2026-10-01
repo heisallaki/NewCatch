@@ -31,19 +31,19 @@ export function TextField({ label, error, hint, style, ...rest }: Props) {
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginBottom: 16 },
-  label: { color: colors.text, fontSize: 14, fontWeight: '600', marginBottom: 6 },
+  wrap: { marginBottom: 14 },
+  label: { color: colors.text, fontSize: 13, fontWeight: '600', marginBottom: 5 },
   input: {
-    minHeight: 50,
+    minHeight: 46,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.inputBg,
     color: colors.text,
-    paddingHorizontal: 14,
-    fontSize: 16,
+    paddingHorizontal: 12,
+    fontSize: 15,
   },
-  multiline: { minHeight: 120, paddingTop: 12, textAlignVertical: 'top' },
+  multiline: { minHeight: 100, paddingTop: 11, textAlignVertical: 'top' },
   focused: { borderColor: colors.accent },
   errorBorder: { borderColor: colors.danger },
   hint: { color: colors.muted, fontSize: 12, marginTop: 4 },
