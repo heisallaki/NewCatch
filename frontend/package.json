@@ -9,7 +9,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "seo": "node --env-file-if-exists=.env scripts/generate-seo.js",
-    "build:web": "npm run seo && expo export --platform web",
+    "build:web": "npm run seo && expo export --platform web && node scripts/fix-pages-assets.js",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
