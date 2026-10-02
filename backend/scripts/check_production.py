@@ -1,5 +1,6 @@
 import argparse
 import io
+import json
 import smtplib
 import sys
 import uuid
@@ -70,7 +71,10 @@ def main() -> None:
         storage.put("photos", filename, data)
         stored = storage.get("photos", filename)
         storage.delete("photos", filename)
-        gone = storage.get("photos", filename) is None
+        body = json.dumps({"prefix": "photos", "limit": 100}).encode()
+        with storage.call("POST", f"{storage.base}/object/list/{storage.bucket}", body, "application/json") as response:
+            objects = json.loads(response.read().decode())
+        gone = not any(obj.get("name") == filename for obj in objects)
         report("Storage upload, download and delete", stored == data and gone, settings.storage_backend)
     except Exception as error:
         report("Storage upload, download and delete", False, type(error).__name__)

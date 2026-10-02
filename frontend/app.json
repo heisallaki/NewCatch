@@ -24,12 +24,7 @@
           "photosPermission": "Allow New Catch to access your photos so you can add profile pictures."
         }
       ],
-      [
-        "expo-notifications",
-        {
-          "color": "#ff4d8d"
-        }
-      ]
+        ["expo-notifications", { "color": "#ff4d8d", "icon": "./assets/notification-icon.png" }]
     ],
     "extra": {
       "eas": {
@@ -40,5 +35,9 @@
     "android": {
       "package": "com.heisallaki.newcatch"
     }
+  },
+    "adaptiveIcon": {
+    "foregroundImage": "./assets/adaptive-icon-foreground.png",
+    "backgroundColor": "#1b0a3d"
   }
 }
